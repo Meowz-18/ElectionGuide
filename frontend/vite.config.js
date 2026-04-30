@@ -4,16 +4,55 @@ import tailwindcss from '@tailwindcss/vite';
 
 /**
  * Vite configuration for VoteWise frontend.
+ * Optimized for production performance with manual chunk splitting,
+ * CSS code splitting, and aggressive minification.
  * @see https://vite.dev/config/
  */
 export default defineConfig({
   plugins: [react(), tailwindcss()],
 
-  // Build optimizations for production performance
+  // Production build optimizations
   build: {
     target: 'es2020',
     sourcemap: false,
+    cssCodeSplit: true,
+    minify: 'esbuild',
     chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        /**
+         * Manual chunk strategy separates vendor libraries for optimal
+         * long-term caching. Each chunk is loaded only when its route
+         * is first visited, reducing initial bundle size.
+         */
+        manualChunks: (id) => {
+          // React core runtime - most stable, cache forever
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor-react';
+          }
+          // Routing - changes infrequently
+          if (id.includes('node_modules/react-router')) {
+            return 'vendor-router';
+          }
+          // Animation library - large, cache separately
+          if (id.includes('node_modules/framer-motion')) {
+            return 'vendor-framer';
+          }
+          // Firebase SDK - large, cache separately
+          if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
+            return 'vendor-firebase';
+          }
+          // Icon library
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons';
+          }
+          // Other third-party vendors
+          if (id.includes('node_modules')) {
+            return 'vendor-misc';
+          }
+        },
+      },
+    },
   },
 
   // Dev server configuration

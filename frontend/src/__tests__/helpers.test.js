@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { sanitizeInput, debounce, formatGoogleCalendarDate, getTimestamp, clamp } from '../utils/helpers';
+import { sanitizeInput, debounce, formatGoogleCalendarDate, openGoogleCalendarEvent, getTimestamp, clamp } from '../utils/helpers';
 
 describe('sanitizeInput', () => {
   it('removes script tags from input', () => {
@@ -104,5 +104,45 @@ describe('clamp', () => {
 
   it('handles edge case where value equals max', () => {
     expect(clamp(100, 0, 100)).toBe(100);
+  });
+
+  it('handles negative ranges', () => {
+    expect(clamp(-50, -100, -10)).toBe(-50);
+    expect(clamp(-200, -100, -10)).toBe(-100);
+    expect(clamp(0, -100, -10)).toBe(-10);
+  });
+});
+
+describe('openGoogleCalendarEvent', () => {
+  let windowOpenSpy;
+
+  beforeEach(() => {
+    windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+  });
+
+  afterEach(() => {
+    windowOpenSpy.mockRestore();
+  });
+
+  it('opens a new tab with a google calendar URL', () => {
+    openGoogleCalendarEvent('Election Day', '20241105T130000Z/20241105T235900Z');
+    expect(windowOpenSpy).toHaveBeenCalledOnce();
+    const [url, target, features] = windowOpenSpy.mock.calls[0];
+    expect(url).toContain('calendar.google.com');
+    expect(url).toContain('Election+Day');
+    expect(target).toBe('_blank');
+    expect(features).toBe('noopener,noreferrer');
+  });
+
+  it('appends the VoteWise suffix to the event title', () => {
+    openGoogleCalendarEvent('Voter Registration Deadline', '20241020T130000Z/20241020T235900Z');
+    const [url] = windowOpenSpy.mock.calls[0];
+    expect(url).toContain('VoteWise');
+  });
+
+  it('includes optional details in the URL when provided', () => {
+    openGoogleCalendarEvent('Early Voting', '20241025T130000Z/20241025T235900Z', 'Bring your ID!');
+    const [url] = windowOpenSpy.mock.calls[0];
+    expect(url).toContain('Bring+your+ID');
   });
 });

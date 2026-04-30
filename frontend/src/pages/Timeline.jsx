@@ -7,6 +7,7 @@
 import React, { useCallback, memo } from 'react';
 import { Calendar, Clock, MapPin, Sparkles, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import PropTypes from 'prop-types';
 import { TIMELINE_EVENTS } from '../constants';
 import { formatGoogleCalendarDate, openGoogleCalendarEvent } from '../utils/helpers';
 
@@ -111,6 +112,17 @@ const TimelineCard = memo(function TimelineCard({ event, index }) {
     </motion.article>
   );
 });
+
+TimelineCard.propTypes = {
+  event: PropTypes.shape({
+    date: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    type: PropTypes.string.isRequired,
+    status: PropTypes.oneOf(['Completed', 'Ongoing', 'Upcoming']).isRequired,
+    gradient: PropTypes.string.isRequired,
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+};
 
 /**
  * Election Cycle Timeline page.

@@ -7,6 +7,7 @@
 import React, { useEffect, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Shield, Globe, Users, Star } from 'lucide-react';
+import PropTypes from 'prop-types';
 import UnicornScene from 'unicornstudio-react';
 
 /** @constant {Array} Feature cards displayed on the landing page. */
@@ -74,59 +75,54 @@ const FeatureCard = memo(function FeatureCard({ item }) {
   );
 });
 
+FeatureCard.propTypes = {
+  item: PropTypes.shape({
+    title: PropTypes.string.isRequired,
+    desc: PropTypes.string.isRequired,
+    icon: PropTypes.elementType.isRequired,
+    color: PropTypes.string.isRequired,
+    link: PropTypes.string.isRequired,
+  }).isRequired,
+};
+
 /**
  * Main landing / hero page for VoteWise.
  * @returns {React.ReactElement} The rendered landing page.
  */
 const Landing = () => {
   useEffect(() => {
-    /** Removes third-party watermark elements injected by external SDKs. */
-    const killWatermarks = () => {
+    /**
+     * Uses a MutationObserver to efficiently remove third-party watermarks
+     * injected by external SDKs, without polling the DOM on a timer.
+     */
+    const handleNode = (el) => {
+      if (!el || el.nodeType !== Node.ELEMENT_NODE) return;
       const selectors = [
-        '#unicorn-studio-canvas + div',
-        '[class*="UnicornStudio"]',
         'a[href*="unicorn.studio"]',
         '[class*="badge"]',
         '[class*="watermark"]',
         'div[style*="z-index: 2147483647"]',
       ];
       selectors.forEach((sel) => {
-        document.querySelectorAll(sel).forEach((el) => {
-          if (el && !el.closest('#unicorn-studio-canvas')) {
-            el.style.setProperty('display', 'none', 'important');
-            el.style.setProperty('opacity', '0', 'important');
-            el.style.setProperty('pointer-events', 'none', 'important');
-          }
-        });
-      });
-
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-      let node;
-      while ((node = walker.nextNode())) {
-        const content = node.textContent.toLowerCase();
-        if (content.includes('made with') && content.includes('unicorn')) {
-          let parent = node.parentElement;
-          while (parent && parent.tagName !== 'BODY' && parent.tagName !== 'SECTION') {
-            if (parent.tagName === 'DIV' || parent.tagName === 'A') {
-              parent.style.setProperty('display', 'none', 'important');
-              parent.style.setProperty('opacity', '0', 'important');
-              break;
-            }
-            parent = parent.parentElement;
-          }
+        if (el.matches?.(sel) && !el.closest('#unicorn-studio-canvas')) {
+          el.style.setProperty('display', 'none', 'important');
         }
+      });
+      const text = el.innerText || el.textContent || '';
+      if (text.toLowerCase().includes('made with') && text.toLowerCase().includes('unicorn')) {
+        el.style.setProperty('display', 'none', 'important');
+        el.style.setProperty('opacity', '0', 'important');
       }
     };
 
-    killWatermarks();
-    const observer = new MutationObserver(killWatermarks);
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach(({ addedNodes }) => {
+        addedNodes.forEach((node) => handleNode(node));
+      });
+    });
     observer.observe(document.body, { childList: true, subtree: true });
-    const interval = setInterval(killWatermarks, 200);
 
-    return () => {
-      observer.disconnect();
-      clearInterval(interval);
-    };
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -204,8 +200,8 @@ const Landing = () => {
 
         {/* Features Grid */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-32" aria-label="Application features">
-          {FEATURES.map((item, idx) => (
-            <FeatureCard key={idx} item={item} />
+          {FEATURES.map((item) => (
+            <FeatureCard key={item.link} item={item} />
           ))}
         </section>
 

@@ -7,6 +7,7 @@
 import React, { useCallback, memo } from 'react';
 import { Send, Sparkles, User, Mic, ShieldCheck, ChevronRight, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import PropTypes from 'prop-types';
 import { useChat } from '../hooks/useChat';
 import { QUICK_QUESTIONS, MAX_QUERY_LENGTH } from '../constants';
 
@@ -56,6 +57,16 @@ const ChatMessage = memo(function ChatMessage({ msg }) {
     </motion.div>
   );
 });
+
+ChatMessage.propTypes = {
+  msg: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    type: PropTypes.oneOf(['user', 'bot']).isRequired,
+    text: PropTypes.string.isRequired,
+    timestamp: PropTypes.string.isRequired,
+    isError: PropTypes.bool,
+  }).isRequired,
+};
 
 /** Typing indicator shown when the bot is generating a response. */
 const TypingIndicator = memo(function TypingIndicator() {
